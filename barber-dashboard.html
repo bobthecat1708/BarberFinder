@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Dashboard - Barber Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .time-slot {
+            transition: background-color 0.1s ease-in-out;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+        .barber-btn.active {
+            outline: 2px solid #4f46e5;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+        }
+        .barber-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Barber Dashboard</h1>
+            <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="py-10">
+        <div class="container mx-auto px-6 space-y-8">
+            <!-- Appointments Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-6">Your Appointments</h2>
+                <div id="appointments-container" class="overflow-x-auto">
+                    <p>Loading appointments...</p>
+                </div>
+            </div>
+
+            <!-- Manage Barbers Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold">Manage Your Barbers</h2>
+                    <button id="add-barber-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                        + Add Barber
+                    </button>
+                </div>
+                <div id="barbers-container" class="overflow-x-auto">
+                    <p>Loading barbers...</p>
+                </div>
+            </div>
+
+            <!-- Manage Services Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold">Manage Your Services</h2>
+                    <button id="add-service-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                        + Add Service
+                    </button>
+                </div>
+                <div id="services-container" class="overflow-x-auto">
+                    <p>Loading services...</p>
+                </div>
+            </div>
+
+            <!-- Manage Schedule Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-semibold">Manage Weekly Schedule</h2>
+                        <p class="text-gray-500 mt-1">Select barbers, then click and drag to set their availability.</p>
+                    </div>
+                     <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <button id="prev-week" class="p-2 rounded-full hover:bg-gray-100">&lt;</button>
+                            <span id="week-range-display" class="font-semibold text-gray-700 w-48 text-center"></span>
+                            <button id="next-week" class="p-2 rounded-full hover:bg-gray-100">&gt;</button>
+                        </div>
+                        <button id="save-schedule-button" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 disabled:bg-indigo-400">
+                            Save All Schedules
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Barber Selector / Legend -->
+                <div id="barber-selector-container" class="flex flex-wrap items-center gap-2 mb-4 border-b pb-4">
+                    <!-- Barber buttons will be generated here -->
+                </div>
+
+                <div id="schedule-calendar" class="overflow-x-auto">
+                    <!-- Calendar grid will be generated here -->
+                </div>
+                <div id="schedule-message" class="mt-4 h-6"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Barber Modal -->
+    <div id="barber-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Add Barber</h3>
+                <div class="mt-2 px-7 py-3">
+                    <form id="barber-form">
+                        <input type="hidden" id="barber-id-input">
+                        <div class="mb-4 text-left">
+                            <label for="barber-name-input" class="block text-sm font-medium text-gray-700">Barber Name</label>
+                            <input type="text" id="barber-name-input" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="mb-4 text-left">
+                            <label for="barber-image-input" class="block text-sm font-medium text-gray-700">Profile Picture</label>
+                            <input type="file" id="barber-image-input" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100">
+                            <img id="image-preview" src="" class="mt-4 h-32 w-32 rounded-full object-cover mx-auto hidden" alt="Image Preview"/>
+                        </div>
+                    </form>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="save-barber-button" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        Save
+                    </button>
+                    <button id="close-modal-button" class="mt-3 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let token = null;
+        let isMouseDown = false;
+        let isSelecting = false;
+        let currentDate = new Date();
+        let barbersData = [];
+        let activeBarberIds = [];
+        let startOfWeekDate;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            token = localStorage.getItem('barber-token');
+            if (!token) {
+                window.location.href = 'barber-login.html';
+                return;
+            }
+
+            await fetchBarbersForDashboard(token);
+            fetchAppointments(token);
+            fetchShopServices(token);
+            renderCalendar();
+            fetchSchedule(token);
+
+            // Event Listeners
+            document.getElementById('logout-button').addEventListener('click', () => {
+                localStorage.removeItem('barber-token');
+                window.location.href = 'barber-login.html';
+            });
+            document.getElementById('add-barber-btn').addEventListener('click', openAddBarberModal);
+            document.getElementById('add-service-btn').addEventListener('click', addService);
+            document.getElementById('save-schedule-button').addEventListener('click', saveSchedule);
+            document.getElementById('save-barber-button').addEventListener('click', handleBarberFormSubmit);
+            document.getElementById('close-modal-button').addEventListener('click', closeModal);
+            document.getElementById('barber-image-input').addEventListener('change', previewImage);
+            
+            const calendarContainer = document.getElementById('schedule-calendar');
+            calendarContainer.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('time-slot') && !e.target.classList.contains('bg-gray-200')) {
+                    isMouseDown = true;
+                    const firstActiveBarber = activeBarberIds[0];
+                    if (firstActiveBarber) {
+                        isSelecting = !e.target.querySelector(`.barber-dot[data-barber-id="${firstActiveBarber}"]`);
+                    } else { isMouseDown = false; return; }
+                    toggleSlot(e.target);
+                    e.preventDefault();
+                }
+            });
+            calendarContainer.addEventListener('mouseover', (e) => {
+                if (isMouseDown && e.target.classList.contains('time-slot') && !e.target.classList.contains('bg-gray-200')) {
+                    toggleSlot(e.target);
+                }
+            });
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+            document.getElementById('prev-week').addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() - 7);
+                renderCalendar();
+                fetchSchedule(token);
+            });
+            document.getElementById('next-week').addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() + 7);
+                renderCalendar();
+                fetchSchedule(token);
+            });
+        });
+        
+        function formatDateForSQL(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function fetchBarbersForDashboard(token) {
+            try {
+                const response = await fetch('http://localhost:3001/api/dashboard/barbers', { headers: { 'x-auth-token': token } });
+                if (!response.ok) throw new Error('Could not fetch barbers.');
+                const barbers = await response.json();
+                const colors = ['bg-blue-500', 'bg-pink-500', 'bg-emerald-500', 'bg-purple-500', 'bg-orange-500'];
+                barbersData = barbers.map((barber, index) => ({ ...barber, colorClass: colors[index % colors.length] }));
+                if (barbersData.length > 0 && activeBarberIds.length === 0) {
+                    activeBarberIds = [barbersData[0].id];
+                }
+                buildBarberSelector();
+                buildBarbersTable();
+            } catch (error) { console.error("Failed to fetch barbers for dashboard:", error); }
+        }
+
+        async function fetchAppointments(token) {
+            const container = document.getElementById('appointments-container');
+            try {
+                const response = await fetch('http://localhost:3001/api/dashboard/appointments', { headers: { 'x-auth-token': token } });
+                if (response.status === 401) { localStorage.removeItem('barber-token'); window.location.href = 'barber-login.html'; return; }
+                if (!response.ok) throw new Error('Failed to load appointments.');
+                const appointments = await response.json();
+                if (appointments.length === 0) { container.innerHTML = '<p>Your shop has no upcoming appointments.</p>'; return; }
+                let tableHtml = `<table class="min-w-full bg-white"><thead class="bg-gray-50"><tr><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th></tr></thead><tbody class="divide-y divide-gray-200">`;
+                appointments.forEach(appt => {
+                    const apptTime = new Date(appt.appointment_time);
+                    const formattedDate = apptTime.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const formattedTime = apptTime.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    tableHtml += `<tr><td class="py-4 px-6 whitespace-nowrap">${formattedDate} at ${formattedTime}</td><td class="py-4 px-6 whitespace-nowrap">${appt.service_name}</td><td class="py-4 px-6 whitespace-nowrap">${appt.barber_name}</td></tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                container.innerHTML = tableHtml;
+            } catch (error) {
+                console.error('Error fetching appointments:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load appointments.</p>';
+            }
+        }
+        
+        async function fetchShopServices(token) {
+            const container = document.getElementById('services-container');
+            try {
+                const response = await fetch('http://localhost:3001/api/dashboard/services', { headers: { 'x-auth-token': token } });
+                if (!response.ok) throw new Error('Failed to load services.');
+                const services = await response.json();
+                if (services.length === 0) { container.innerHTML = '<p>You have not added any services yet.</p>'; return; }
+                let tableHtml = `<table class="min-w-full bg-white"><thead class="bg-gray-50"><tr><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Name</th><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th><th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th><th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="divide-y divide-gray-200">`;
+                services.forEach(s => {
+                    tableHtml += `<tr><td class="py-4 px-6 whitespace-nowrap">${s.name}</td><td class="py-4 px-6 whitespace-nowrap">$${s.price}</td><td class="py-4 px-6 whitespace-nowrap">${s.duration_minutes} mins</td><td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium"><button onclick='editService(${JSON.stringify(s)})' class="text-indigo-600 hover:text-indigo-900">Edit</button><button onclick='deleteService(${s.id}, "${s.name}")' class="text-red-600 hover:text-red-900 ml-4">Delete</button></td></tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                container.innerHTML = tableHtml;
+            } catch (error) {
+                console.error('Error fetching services:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load services.</p>';
+            }
+        }
+
+        async function addService() {
+            const name = prompt("Enter service name:");
+            if (!name) return;
+            const price = prompt("Enter service price (e.g., 40.00):");
+            if (!price) return;
+            const duration = prompt("Enter service duration in minutes (e.g., 30):");
+            if (!duration) return;
+            try {
+                const response = await fetch('http://localhost:3001/api/dashboard/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                    body: JSON.stringify({ name, price: parseFloat(price), duration_minutes: parseInt(duration) }),
+                });
+                if (!response.ok) throw new Error('Failed to add service.');
+                fetchShopServices(token);
+            } catch (error) { alert(error.message); }
+        }
+
+        async function editService(service) {
+            const name = prompt("Enter new service name:", service.name);
+            if (!name) return;
+            const price = prompt("Enter new service price:", service.price);
+            if (!price) return;
+            const duration = prompt("Enter new service duration in minutes:", service.duration_minutes);
+            if (!duration) return;
+            try {
+                const response = await fetch(`http://localhost:3001/api/dashboard/services/${service.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                    body: JSON.stringify({ name, price: parseFloat(price), duration_minutes: parseInt(duration) }),
+                });
+                if (!response.ok) throw new Error('Failed to update service.');
+                fetchShopServices(token);
+            } catch (error) { alert(error.message); }
+        }
+
+        async function deleteService(serviceId, serviceName) {
+            if (confirm(`Are you sure you want to delete the service "${serviceName}"?`)) {
+                try {
+                    const response = await fetch(`http://localhost:3001/api/dashboard/services/${serviceId}`, {
+                        method: 'DELETE',
+                        headers: { 'x-auth-token': token },
+                    });
+                    if (!response.ok) throw new Error('Failed to delete service.');
+                    fetchShopServices(token);
+                } catch (error) { alert(error.message); }
+            }
+        }
+
+        function buildBarberSelector() {
+            const container = document.getElementById('barber-selector-container');
+            container.innerHTML = '';
+            barbersData.forEach(barber => {
+                const button = document.createElement('button');
+                button.className = `barber-btn text-white px-4 py-2 rounded-full text-sm font-semibold transition-shadow ${barber.colorClass}`;
+                button.innerText = barber.name;
+                button.dataset.barberId = barber.id;
+                if (activeBarberIds.includes(barber.id)) { button.classList.add('active'); }
+                button.addEventListener('click', () => {
+                    button.classList.toggle('active');
+                    const barberId = parseInt(button.dataset.barberId);
+                    if (activeBarberIds.includes(barberId)) {
+                        activeBarberIds = activeBarberIds.filter(id => id !== barberId);
+                    } else {
+                        activeBarberIds.push(barberId);
+                    }
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function buildBarbersTable() {
+            const container = document.getElementById('barbers-container');
+            if (barbersData.length === 0) {
+                container.innerHTML = '<p>You have not added any barbers yet.</p>';
+                return;
+            }
+            let tableHtml = `<table class="min-w-full bg-white"><thead class="bg-gray-50"><tr>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                                <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                             </tr></thead><tbody class="divide-y divide-gray-200">`;
+            barbersData.forEach(barber => {
+                tableHtml += `<tr>
+                                <td class="py-4 px-6 whitespace-nowrap">${barber.name}</td>
+                                <td class="py-4 px-6 whitespace-nowrap"><img src="${barber.image_url || 'https://placehold.co/40x40/e2e8f0/334155?text=N/A'}" class="w-10 h-10 rounded-full object-cover"></td>
+                                <td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
+                                    <button onclick='openEditBarberModal(${JSON.stringify(barber)})' class="text-indigo-600 hover:text-indigo-900">Edit</button>
+                                    <button onclick='deleteBarber(${barber.id}, "${barber.name}")' class="text-red-600 hover:text-red-900 ml-4">Delete</button>
+                                </td>
+                              </tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+
+        // --- NEW MODAL AND BARBER MANAGEMENT FUNCTIONS ---
+        
+        function openAddBarberModal() {
+            document.getElementById('barber-form').reset();
+            document.getElementById('modal-title').innerText = 'Add New Barber';
+            document.getElementById('barber-id-input').value = '';
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('barber-modal').classList.remove('hidden');
+        }
+
+        function openEditBarberModal(barber) {
+            document.getElementById('barber-form').reset();
+            document.getElementById('modal-title').innerText = 'Edit Barber';
+            document.getElementById('barber-id-input').value = barber.id;
+            document.getElementById('barber-name-input').value = barber.name;
+            const preview = document.getElementById('image-preview');
+            if (barber.image_url) {
+                preview.src = barber.image_url;
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+            }
+            document.getElementById('barber-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('barber-modal').classList.add('hidden');
+        }
+
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function(){
+                const preview = document.getElementById('image-preview');
+                preview.src = reader.result;
+                preview.classList.remove('hidden');
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        async function handleBarberFormSubmit() {
+            const barberId = document.getElementById('barber-id-input').value;
+            const name = document.getElementById('barber-name-input').value;
+            const imageFile = document.getElementById('barber-image-input').files[0];
+
+            let base64Image = null;
+            if (imageFile) {
+                base64Image = await toBase64(imageFile);
+            }
+
+            const barberData = { name, base64Image };
+
+            try {
+                let response;
+                if (barberId) { // Editing existing barber
+                    response = await fetch(`http://localhost:3001/api/dashboard/barbers/${barberId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                        body: JSON.stringify(barberData),
+                    });
+                } else { // Adding new barber
+                    response = await fetch('http://localhost:3001/api/dashboard/barbers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                        body: JSON.stringify(barberData),
+                    });
+                }
+                if (!response.ok) throw new Error('Failed to save barber details.');
+                
+                closeModal();
+                await fetchBarbersForDashboard(token);
+                renderCalendar();
+                fetchSchedule(token);
+
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+            }
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        async function deleteBarber(barberId, barberName) {
+            if (confirm(`Are you sure you want to delete ${barberName}? This cannot be undone.`)) {
+                try {
+                    const response = await fetch(`http://localhost:3001/api/dashboard/barbers/${barberId}`, {
+                        method: 'DELETE',
+                        headers: { 'x-auth-token': token },
+                    });
+                    if (!response.ok) throw new Error('Failed to delete barber.');
+                    await fetchBarbersForDashboard(token);
+                    renderCalendar();
+                    fetchSchedule(token);
+                } catch (error) { console.error(error); alert(error.message); }
+            }
+        }
+
+        function renderCalendar() {
+            const calendarContainer = document.getElementById('schedule-calendar');
+            const weekRangeDisplay = document.getElementById('week-range-display');
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const timeSlots = [];
+            for (let hour = 8; hour < 20; hour++) {
+                timeSlots.push(`${String(hour).padStart(2, '0')}:00`);
+                timeSlots.push(`${String(hour).padStart(2, '0')}:30`);
+            }
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            startOfWeekDate = new Date(currentDate);
+            const dayOfWeek = startOfWeekDate.getDay();
+            const diff = startOfWeekDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            startOfWeekDate.setDate(diff);
+            const endOfWeek = new Date(startOfWeekDate);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+            weekRangeDisplay.innerText = `${startOfWeekDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} - ${endOfWeek.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`;
+            let calendarHtml = '<div class="grid grid-cols-8 min-w-[800px]">';
+            calendarHtml += '<div class="sticky top-0 z-10"></div>';
+            for(let i = 0; i < 7; i++) {
+                const dayDate = new Date(startOfWeekDate);
+                dayDate.setDate(dayDate.getDate() + i);
+                const isToday = dayDate.toDateString() === today.toDateString();
+                const dayHeaderClasses = `font-bold text-center p-2 border-b`;
+                let dateNumberHtml;
+                if (isToday) {
+                    dateNumberHtml = `<div class="bg-indigo-600 text-white rounded-full h-10 w-10 flex items-center justify-center mx-auto text-2xl">${dayDate.getDate()}</div>`;
+                } else {
+                    dateNumberHtml = `<div class="text-2xl">${dayDate.getDate()}</div>`;
+                }
+                calendarHtml += `<div class="${dayHeaderClasses}"><div>${days[i]}</div>${dateNumberHtml}</div>`;
+            }
+            timeSlots.forEach(slot => {
+                const time = new Date(`1970-01-01T${slot}:00`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+                calendarHtml += `<div class="text-right pr-2 text-sm text-gray-500 border-r h-10 flex items-center justify-end">${time}</div>`;
+                for(let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                    const dayDate = new Date(startOfWeekDate);
+                    dayDate.setDate(dayDate.getDate() + dayIndex);
+                    const isPast = dayDate < today;
+                    const slotClasses = `time-slot border h-10 flex items-center justify-start gap-1 p-1 ${isPast ? 'bg-gray-200 cursor-not-allowed' : 'cursor-pointer'}`;
+                    calendarHtml += `<div class="${slotClasses}" data-day="${dayIndex}" data-time="${slot}"></div>`;
+                }
+            });
+            calendarHtml += '</div>';
+            calendarContainer.innerHTML = calendarHtml;
+        }
+
+        function toggleSlot(slotElement) {
+            if (activeBarberIds.length === 0) return;
+            activeBarberIds.forEach(barberId => {
+                const barber = barbersData.find(b => b.id === barberId);
+                const existingDot = slotElement.querySelector(`.barber-dot[data-barber-id="${barberId}"]`);
+                if (isSelecting) {
+                    if (!existingDot) {
+                        const dot = document.createElement('div');
+                        dot.className = `barber-dot ${barber.colorClass}`;
+                        dot.dataset.barberId = barberId;
+                        slotElement.appendChild(dot);
+                    }
+                } else {
+                    if (existingDot) {
+                        existingDot.remove();
+                    }
+                }
+            });
+        }
+
+        async function fetchSchedule(token) {
+            try {
+                const response = await fetch('http://localhost:3001/api/dashboard/schedule', { headers: { 'x-auth-token': token } });
+                if (!response.ok) throw new Error('Could not fetch schedule.');
+                const scheduleData = await response.json();
+                document.querySelectorAll('.barber-dot').forEach(dot => dot.remove());
+
+                const startOfWeek = new Date(startOfWeekDate);
+                startOfWeek.setHours(0, 0, 0, 0);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+                scheduleData.forEach(day => {
+                    const barber = barbersData.find(b => b.id === day.barber_id);
+                    if (!barber) return;
+                    
+                    // --- CORRECTED DATE PARSING ---
+                    const dateParts = day.schedule_date.split('T')[0].split('-');
+                    const scheduleDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+
+                    if (scheduleDate >= startOfWeek && scheduleDate < endOfWeek) {
+                        const dayOfWeekJS = scheduleDate.getDay();
+                        const dayOfWeekDisplay = dayOfWeekJS === 0 ? 6 : dayOfWeekJS;
+
+                        if (day.is_active && day.start_time && day.end_time) {
+                            const [startHour, startMinute] = day.start_time.split(':').map(Number);
+                            const [endHour, endMinute] = day.end_time.split(':').map(Number);
+                            let currentTime = new Date(); currentTime.setHours(startHour, startMinute, 0, 0);
+                            let endTime = new Date(); endTime.setHours(endHour, endMinute, 0, 0);
+                            document.querySelectorAll(`.time-slot[data-day="${dayOfWeekDisplay}"]`).forEach(slot => {
+                                const [slotHour, slotMinute] = slot.dataset.time.split(':').map(Number);
+                                let slotTime = new Date(); slotTime.setHours(slotHour, slotMinute, 0, 0);
+                                if (slotTime >= currentTime && slotTime < endTime) {
+                                    const dot = document.createElement('div');
+                                    dot.className = `barber-dot ${barber.colorClass}`;
+                                    dot.dataset.barberId = barber.id;
+                                    slot.appendChild(dot);
+                                }
+                            });
+                        }
+                    }
+                });
+            } catch (error) { console.error(error); }
+        }
+        
+        async function saveSchedule() {
+            const saveButton = document.getElementById('save-schedule-button');
+            const schedulesByBarber = {};
+            barbersData.forEach(barber => {
+                const barberSchedule = [];
+                for (let i = 0; i < 7; i++) {
+                    const dayDate = new Date(startOfWeekDate);
+                    dayDate.setDate(dayDate.getDate() + i);
+                    const scheduleDate = formatDateForSQL(dayDate);
+                    const selectedSlots = document.querySelectorAll(`.time-slot[data-day="${i}"] .barber-dot[data-barber-id="${barber.id}"]`);
+                    if (selectedSlots.length > 0) {
+                        const times = Array.from(selectedSlots).map(s => s.parentElement.dataset.time);
+                        times.sort();
+                        let currentBlock = [];
+                        times.forEach((time, index) => {
+                            if (index === 0) {
+                                currentBlock.push(time);
+                                return;
+                            }
+                            const prevTime = times[index - 1];
+                            const [prevHour, prevMinute] = prevTime.split(':').map(Number);
+                            const [currHour, currMinute] = time.split(':').map(Number);
+                            const prevDate = new Date(0); prevDate.setHours(prevHour, prevMinute);
+                            const currDate = new Date(0); currDate.setHours(currHour, currMinute);
+                            if (currDate - prevDate > 30 * 60 * 1000) {
+                                const startTime = currentBlock[0];
+                                const lastSlotTime = currentBlock[currentBlock.length - 1];
+                                let endTimeObj = new Date(`1970-01-01T${lastSlotTime}:00`);
+                                endTimeObj.setMinutes(endTimeObj.getMinutes() + 30);
+                                const endTime = `${String(endTimeObj.getHours()).padStart(2, '0')}:${String(endTimeObj.getMinutes()).padStart(2, '0')}`;
+                                barberSchedule.push({ schedule_date: scheduleDate, is_active: true, start_time: startTime, end_time: endTime });
+                                currentBlock = [time];
+                            } else {
+                                currentBlock.push(time);
+                            }
+                        });
+                        if (currentBlock.length > 0) {
+                            const startTime = currentBlock[0];
+                            const lastSlotTime = currentBlock[currentBlock.length - 1];
+                            let endTimeObj = new Date(`1970-01-01T${lastSlotTime}:00`);
+                            endTimeObj.setMinutes(endTimeObj.getMinutes() + 30);
+                            const endTime = `${String(endTimeObj.getHours()).padStart(2, '0')}:${String(endTimeObj.getMinutes()).padStart(2, '0')}`;
+                            barberSchedule.push({ schedule_date: scheduleDate, is_active: true, start_time: startTime, end_time: endTime });
+                        }
+                    }
+                }
+                schedulesByBarber[barber.id] = barberSchedule;
+            });
+            const messageDiv = document.getElementById('schedule-message');
+            messageDiv.innerHTML = '<p class="text-gray-600">Saving...</p>';
+            saveButton.disabled = true;
+            try {
+                const endOfWeek = new Date(startOfWeekDate);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+                const response = await fetch('http://localhost:3001/api/dashboard/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                    body: JSON.stringify({ 
+                        schedulesByBarber: schedulesByBarber,
+                        startDate: formatDateForSQL(startOfWeekDate),
+                        endDate: formatDateForSQL(endOfWeek)
+                    }),
+                });
+                if (!response.ok) throw new Error('Failed to save schedule.');
+                messageDiv.innerHTML = '<p class="text-green-600 font-semibold">Schedule saved successfully!</p>';
+            } catch (error) {
+                console.error(error);
+                messageDiv.innerHTML = `<p class="text-red-600 font-semibold">${error.message}</p>`;
+            } finally {
+                saveButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

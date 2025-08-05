@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - Barber Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-gray-800">Barber Finder</a>
+            <div>
+                <span id="welcome-message" class="text-gray-600 mr-4"></span>
+                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="py-10">
+        <div class="container mx-auto px-6 space-y-8">
+
+            <!-- My Bookings Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-6">My Bookings</h2>
+                <div id="bookings-container" class="overflow-x-auto">
+                    <p>Loading your bookings...</p>
+                </div>
+            </div>
+
+            <!-- Favourite Shops Section -->
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-6">My Favourite Shops</h2>
+                <div id="favourites-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <p>Loading your favourite shops...</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let token = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = localStorage.getItem('customer-token');
+
+            if (!token) {
+                window.location.href = 'customer-login.html';
+                return;
+            }
+
+            // Decode the token to get the user's name for a welcome message
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('welcome-message').innerText = `Welcome, ${payload.customer.name}!`;
+            } catch (e) {
+                console.error("Failed to decode token", e);
+            }
+
+            fetchMyBookings(token);
+            fetchMyFavourites(token);
+
+            document.getElementById('logout-button').addEventListener('click', () => {
+                localStorage.removeItem('customer-token');
+                window.location.href = 'index.html';
+            });
+        });
+
+        async function fetchMyBookings(token) {
+            const container = document.getElementById('bookings-container');
+            try {
+                const response = await fetch('http://localhost:3001/api/customers/bookings', {
+                    headers: { 'x-auth-token': token }
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem('customer-token');
+                    window.location.href = 'customer-login.html';
+                    return;
+                }
+                if (!response.ok) throw new Error('Failed to load bookings.');
+
+                const bookings = await response.json();
+                
+                if (bookings.length === 0) {
+                    container.innerHTML = '<p>You have no bookings.</p>';
+                    return;
+                }
+
+                const upcomingBookings = bookings.filter(b => new Date(b.appointment_time) >= new Date());
+                const pastBookings = bookings.filter(b => new Date(b.appointment_time) < new Date());
+
+                let html = '<div>';
+                if (upcomingBookings.length > 0) {
+                    html += '<h3 class="text-lg font-semibold mb-2">Upcoming</h3>';
+                    html += '<ul class="divide-y divide-gray-200">';
+                    upcomingBookings.forEach(b => {
+                        html += `<li class="py-3">${formatBooking(b)}</li>`;
+                    });
+                    html += '</ul>';
+                }
+
+                if (pastBookings.length > 0) {
+                    html += '<h3 class="text-lg font-semibold mt-6 mb-2">Previous</h3>';
+                    html += '<ul class="divide-y divide-gray-200">';
+                    pastBookings.forEach(b => {
+                        html += `<li class="py-3 text-gray-500">${formatBooking(b)}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load your bookings.</p>';
+            }
+        }
+
+        function formatBooking(booking) {
+            const apptTime = new Date(booking.appointment_time);
+            const formattedDate = apptTime.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+            const formattedTime = apptTime.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return `
+                <div class="flex flex-col sm:flex-row justify-between">
+                    <div>
+                        <p class="font-bold">${booking.shop_name}</p>
+                        <p>${booking.service_name} with ${booking.barber_name}</p>
+                    </div>
+                    <div class="text-left sm:text-right mt-2 sm:mt-0">
+                        <p class="font-semibold">${formattedDate}</p>
+                        <p>${formattedTime}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function fetchMyFavourites(token) {
+            const container = document.getElementById('favourites-container');
+            try {
+                const response = await fetch('http://localhost:3001/api/customers/favourites', {
+                    headers: { 'x-auth-token': token }
+                });
+                if (!response.ok) throw new Error('Failed to load favourites.');
+                const shops = await response.json();
+
+                if (shops.length === 0) {
+                    container.innerHTML = '<p>You have not favourited any shops yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = shops.map(shop => {
+                     const ratingStars = shop.rating ? '★'.repeat(Math.round(shop.rating)) + '☆'.repeat(5 - Math.round(shop.rating)) : '';
+                    return `
+                        <div class="bg-white rounded-lg shadow flex items-center p-4">
+                            <img src="${shop.image_url || 'https://placehold.co/100x100/e2e8f0/334155?text=Shop'}" class="w-20 h-20 rounded-md object-cover mr-4">
+                            <div>
+                                <h4 class="font-bold">${shop.name}</h4>
+                                <p class="text-sm text-gray-500">${shop.address}</p>
+                                <div class="text-yellow-500 mt-1">${ratingStars}</div>
+                                <a href="shop-detail.html?id=${shop.id}" class="text-indigo-600 hover:underline text-sm font-semibold mt-2 inline-block">Book Again</a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error fetching favourites:', error);
+                container.innerHTML = '<p class="text-red-500">Could not load your favourite shops.</p>';
+            }
+        }
+    </script>
+
+</body>
+</html>

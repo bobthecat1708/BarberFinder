@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barber Finder - Find the Best Barber Shops</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1567894340345-a634c4a4e8cb?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        .cta-section {
+            background-color: #1a1a1a;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-gray-900">Barber Finder</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#find-shop" class="text-gray-600 hover:text-indigo-600 transition duration-300">Find a Shop</a>
+                <a href="barber-login.html" class="text-gray-600 hover:text-indigo-600 transition duration-300">For Barbers</a>
+                <a href="customer-login.html" class="text-gray-600 hover:text-indigo-600 transition duration-300">Log In</a>
+                <a href="customer-signup.html" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">Sign Up</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-800">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#find-shop" class="block py-2 text-gray-600 hover:text-indigo-600">Find a Shop</a>
+            <a href="barber-login.html" class="block py-2 text-gray-600 hover:text-indigo-600">For Barbers</a>
+            <a href="customer-login.html" class="block py-2 text-gray-600 hover:text-indigo-600">Log In</a>
+            <a href="customer-signup.html" class="block mt-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-center hover:bg-indigo-700">Sign Up</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section text-white">
+            <div class="container mx-auto px-6 py-32 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">Your Next Haircut, Simplified.</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Find top-rated local barber shops, book your appointment online, and pay with ease.</p>
+                <div id="find-shop" class="max-w-xl mx-auto">
+                    <div class="flex flex-col md:flex-row items-center bg-white rounded-lg p-2 shadow-lg">
+                        <input type="text" placeholder="Enter your location or a shop's name" class="w-full md:flex-grow p-3 text-gray-700 rounded-lg md:rounded-none md:rounded-l-lg focus:outline-none">
+                        <button class="w-full md:w-auto mt-2 md:mt-0 bg-indigo-600 text-white px-8 py-3 rounded-lg md:rounded-none md:rounded-r-lg hover:bg-indigo-700 transition duration-300 font-semibold">Find Shops</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold mb-2">How It Works</h2>
+                <p class="text-gray-600 mb-12">Booking your next appointment is as easy as 1, 2, 3.</p>
+                <div class="grid md:grid-cols-3 gap-12">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-6 mb-4">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">1. Find Your Shop</h3>
+                        <p class="text-gray-600">Search for shops in your area and browse profiles, services, and reviews.</p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-6 mb-4">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">2. Book Instantly</h3>
+                        <p class="text-gray-600">Choose a barber, a service, and a time that works for you.</p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-6 mb-4">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">3. Pay Securely</h3>
+                        <p class="text-gray-600">Pay for your service online. It's fast, secure, and hassle-free.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Shops Section -->
+        <section class="py-20">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl font-bold text-center mb-12">Featured Barber Shops Near You</h2>
+                <div id="shops-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <p class="col-span-full text-center text-gray-500">Loading shops...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- "For Barbers" CTA Section -->
+        <section id="for-barbers" class="cta-section text-white py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Grow Your Business with Barber Finder</h2>
+                <p class="text-gray-300 max-w-2xl mx-auto mb-8">Join our platform to connect with new clients, manage your schedules effortlessly, and streamline your payments.</p>
+                <a href="barber-signup.html" class="bg-indigo-600 text-white px-8 py-4 rounded-lg hover:bg-indigo-700 transition duration-300 font-bold text-lg">List Your Shop</a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-4">Barber Finder</h3>
+                    <p class="text-gray-400">Your next haircut, simplified.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4">For Customers</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#find-shop" class="hover:text-indigo-400">Find a Shop</a></li>
+                        <li class="mb-2"><a href="customer-signup.html" class="hover:text-indigo-400">Sign Up</a></li>
+                        <li class="mb-2"><a href="customer-login.html" class="hover:text-indigo-400">Log In</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">Help</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4">For Barbers</h3>
+                    <ul>
+                        <li class="mb-2"><a href="barber-signup.html" class="hover:text-indigo-400">List Your Shop</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">Pricing</a></li>
+                        <li class="mb-2"><a href="barber-login.html" class="hover:text-indigo-400">Shop Login</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4">Company</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">About Us</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">Contact</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-indigo-400">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">&copy; 2025 Barber Finder. All rights reserved.</p>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.71v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" /></svg></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- Mobile Menu Toggle ---
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // --- Fetch and Display Shops ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchShops();
+        });
+
+        async function fetchShops() {
+            const apiUrl = 'http://localhost:3001/api/shops';
+            const container = document.getElementById('shops-container');
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const shops = await response.json();
+                container.innerHTML = '';
+
+                if (shops.length === 0) {
+                    container.innerHTML = '<p class="col-span-full text-center text-gray-500">No shops found.</p>';
+                    return;
+                }
+
+                shops.forEach(shop => {
+                    const ratingStars = shop.rating ? '★'.repeat(Math.round(shop.rating)) + '☆'.repeat(5 - Math.round(shop.rating)) : '<span class="text-gray-400">No rating</span>';
+                    const reviewsText = shop.reviews ? `(${shop.reviews} reviews)` : '';
+                    
+                    const shopCard = `
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+                            <img src="${shop.image_url || 'https://placehold.co/600x400/e2e8f0/334155?text=Shop+Image'}" alt="Photo of ${shop.name}" class="w-full h-56 object-cover">
+                            <div class="p-6 flex flex-col flex-grow">
+                                <h3 class="text-xl font-bold mb-1">${shop.name}</h3>
+                                <p class="text-gray-500 text-sm mb-4">${shop.address}</p>
+                                <div class="flex items-center mb-4">
+                                    <span class="text-yellow-500">${ratingStars}</span>
+                                    <span class="text-gray-600 ml-2">${reviewsText}</span>
+                                </div>
+                                <div class="mt-auto">
+                                    <a href="shop-detail.html?id=${shop.id}" class="block w-full text-center bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                                        View Details & Book
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += shopCard;
+                });
+
+            } catch (error) {
+                console.error('Failed to fetch shops:', error);
+                container.innerHTML = '<p class="col-span-full text-center text-red-500">Could not load shops. Please make sure the backend server is running.</p>';
+            }
+        }
+    </script>
+
+</body>
+</html>

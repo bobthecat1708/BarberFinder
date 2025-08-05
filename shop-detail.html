@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Details - Barber Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .selectable-item.selected {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+            outline: 2px solid #4f46e5;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-gray-900">Barber Finder</a>
+        </nav>
+    </header>
+
+    <main class="py-12">
+        <div class="container mx-auto px-6">
+            <!-- Main container for shop details and booking -->
+            <div id="shop-detail-container" class="max-w-4xl mx-auto">
+                <p class="text-center text-gray-500">Loading shop details...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p class="text-gray-400 text-sm">&copy; 2025 Barber Finder. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        let shopId = null;
+        let selectedService = null;
+        let selectedBarber = null;
+        let selectedTime = null;
+        let shopData = {};
+        let customerToken = null;
+        let customerFavourites = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            customerToken = localStorage.getItem('customer-token');
+            const params = new URLSearchParams(window.location.search);
+            shopId = params.get('id');
+
+            if (shopId) {
+                if (customerToken) {
+                    await fetchMyFavourites(customerToken);
+                }
+                fetchShopDetails(shopId);
+            } else {
+                document.getElementById('shop-detail-container').innerHTML = '<p class="text-center text-red-500">No shop ID provided.</p>';
+            }
+        });
+
+        async function fetchMyFavourites(token) {
+            try {
+                const response = await fetch('http://localhost:3001/api/customers/favourites', {
+                    headers: { 'x-auth-token': token }
+                });
+                if (!response.ok) throw new Error('Could not fetch favourites.');
+                const favs = await response.json();
+                customerFavourites = favs.map(fav => fav.id); // Store an array of favourite shop IDs
+            } catch (error) {
+                console.error("Failed to fetch customer favourites:", error);
+            }
+        }
+
+        async function fetchShopDetails(id) {
+            const container = document.getElementById('shop-detail-container');
+            try {
+                const response = await fetch(`http://localhost:3001/api/shops/${id}`);
+                if (!response.ok) throw new Error(`Shop not found.`);
+                shopData = await response.json();
+
+                document.title = `${shopData.name} - Barber Finder`;
+                const ratingStars = shopData.rating ? '★'.repeat(Math.round(shopData.rating)) + '☆'.repeat(5 - Math.round(shopData.rating)) : '';
+                const isFavourited = customerFavourites.includes(shopData.id);
+
+                let favouriteButtonHtml = '';
+                if (customerToken) {
+                    favouriteButtonHtml = `
+                        <button id="favourite-btn" onclick="toggleFavourite()" class="ml-4 p-2 rounded-full ${isFavourited ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-500'} hover:bg-pink-100 hover:text-pink-600 transition">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    `;
+                }
+
+                const detailHtml = `
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                        <div id="booking-confirmation-message" class="hidden"></div>
+                        <img src="${shopData.image_url}" alt="Photo of ${shopData.name}" class="w-full h-64 object-cover">
+                        <div class="p-8">
+                            <div class="flex justify-between items-start">
+                                <h1 class="text-4xl font-bold mb-2">${shopData.name}</h1>
+                                ${favouriteButtonHtml}
+                            </div>
+                            <div class="flex items-center mb-6">
+                                <span class="text-yellow-500 text-xl">${ratingStars}</span>
+                                <span class="text-gray-600 ml-3 text-lg">(${shopData.reviews} reviews)</span>
+                            </div>
+                            <p class="text-gray-700 text-lg">${shopData.address}</p>
+                            
+                            <div id="booking-flow">
+                                <!-- Step 1: Services -->
+                                <div id="services-section" class="border-t mt-6 pt-6">
+                                    <h2 class="text-2xl font-semibold mb-4">1. Choose a Service</h2>
+                                    <div id="services-list" class="space-y-3">Loading services...</div>
+                                </div>
+
+                                <!-- Step 2: Barbers -->
+                                <div id="barbers-section" class="border-t mt-6 pt-6 hidden">
+                                    <h2 class="text-2xl font-semibold mb-4">2. Choose a Barber</h2>
+                                    <div id="barbers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                                </div>
+
+                                <!-- Step 3: Date & Time -->
+                                <div id="schedule-section" class="border-t mt-6 pt-6 hidden">
+                                    <h2 class="text-2xl font-semibold mb-4">3. Select Date & Time</h2>
+                                    <input type="date" id="date-picker" class="w-full p-2 border rounded-md mb-4">
+                                    <div id="time-slots" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+                                </div>
+
+                                <!-- Step 4: Confirmation -->
+                                <div id="confirm-button-container" class="mt-8 hidden">
+                                    <button id="confirm-booking-btn" onclick="confirmBooking()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition disabled:bg-gray-400" disabled>
+                                        Confirm Booking
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = detailHtml;
+                
+                document.getElementById('date-picker').addEventListener('change', () => fetchAvailability());
+                fetchServices(shopData.id);
+
+            } catch (error) {
+                container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
+            }
+        }
+
+        async function toggleFavourite() {
+            const isFavourited = customerFavourites.includes(shopData.id);
+            const method = isFavourited ? 'DELETE' : 'POST';
+            const url = isFavourited 
+                ? `http://localhost:3001/api/customers/favourites/${shopData.id}`
+                : 'http://localhost:3001/api/customers/favourites';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': customerToken
+                    },
+                    body: isFavourited ? null : JSON.stringify({ shop_id: shopData.id })
+                });
+
+                if (!response.ok) throw new Error('Could not update favourites.');
+
+                const favButton = document.getElementById('favourite-btn');
+                if (isFavourited) {
+                    customerFavourites = customerFavourites.filter(id => id !== shopData.id);
+                    favButton.classList.remove('bg-pink-100', 'text-pink-600');
+                    favButton.classList.add('bg-gray-100', 'text-gray-500');
+                } else {
+                    customerFavourites.push(shopData.id);
+                    favButton.classList.add('bg-pink-100', 'text-pink-600');
+                    favButton.classList.remove('bg-gray-100', 'text-gray-500');
+                }
+
+            } catch (error) {
+                console.error("Failed to toggle favourite:", error);
+                alert("There was an error updating your favourites. Please try again.");
+            }
+        }
+
+        async function fetchServices(shopId) {
+            const servicesList = document.getElementById('services-list');
+            try {
+                const response = await fetch(`http://localhost:3001/api/shops/${shopId}/services`);
+                const services = await response.json();
+                servicesList.innerHTML = services.map(service => `
+                    <div class="selectable-item border rounded-lg p-4 flex justify-between items-center cursor-pointer" onclick='selectService(${JSON.stringify(service)})'>
+                        <div>
+                            <h3 class="font-semibold">${service.name}</h3>
+                            <p class="text-sm text-gray-500">${service.duration_minutes} minutes</p>
+                        </div>
+                        <p class="font-bold text-lg">$${service.price}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                servicesList.innerHTML = '<p class="text-red-500">Could not load services.</p>';
+            }
+        }
+
+        function selectService(service) {
+            selectedService = service;
+            document.querySelectorAll('#services-list .selectable-item').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            document.getElementById('barbers-section').classList.remove('hidden');
+            const barbersList = document.getElementById('barbers-list');
+            barbersList.innerHTML = shopData.barbers.map(barber => `
+                <div class="selectable-item text-center p-2 border rounded-lg cursor-pointer" onclick='selectBarber(${JSON.stringify(barber)})'>
+                    <img src="${barber.image_url || 'https://placehold.co/200x200/e2e8f0/334155?text=Barber'}" class="w-24 h-24 rounded-full mx-auto mb-2 object-cover">
+                    <h4 class="font-semibold">${barber.name}</h4>
+                </div>
+            `).join('');
+        }
+
+        function selectBarber(barber) {
+            selectedBarber = barber;
+            document.querySelectorAll('#barbers-list .selectable-item').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            document.getElementById('schedule-section').classList.remove('hidden');
+            document.getElementById('date-picker').min = new Date().toISOString().split("T")[0];
+        }
+
+        async function fetchAvailability() {
+            if (!selectedBarber) return;
+            const date = document.getElementById('date-picker').value;
+            if (!date) return;
+
+            const slotsContainer = document.getElementById('time-slots');
+            slotsContainer.innerHTML = '<p class="col-span-full">Loading times...</p>';
+            
+            try {
+                const response = await fetch(`http://localhost:3001/api/barbers/${selectedBarber.id}/availability?date=${date}`);
+                const slots = await response.json();
+                if (slots.length === 0) {
+                    slotsContainer.innerHTML = '<p class="col-span-full">No available times for this day.</p>';
+                    return;
+                }
+                slotsContainer.innerHTML = slots.map(slot => {
+                    // --- CORRECTED TIMEZONE LOGIC ---
+                    const dateObj = new Date(slot);
+                    const hours = dateObj.getUTCHours();
+                    const minutes = dateObj.getUTCMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const formattedHours = hours % 12 || 12;
+                    const formattedMinutes = String(minutes).padStart(2, '0');
+                    const time = `${formattedHours}:${formattedMinutes} ${ampm}`;
+                    
+                    return `<button class="selectable-item border rounded-lg p-2 hover:bg-gray-100" onclick="selectTime(this, '${slot}')">${time}</button>`;
+                }).join('');
+            } catch (error) {
+                slotsContainer.innerHTML = '<p class="col-span-full text-red-500">Could not load times.</p>';
+            }
+        }
+
+        function selectTime(element, time) {
+            selectedTime = time;
+            document.querySelectorAll('#time-slots .selectable-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            document.getElementById('confirm-button-container').classList.remove('hidden');
+            document.getElementById('confirm-booking-btn').disabled = false;
+        }
+
+        async function confirmBooking() {
+            if (!customerToken) {
+                alert("Please log in or create an account to book an appointment.");
+                window.location.href = 'customer-login.html';
+                return;
+            }
+
+            const confirmBtn = document.getElementById('confirm-booking-btn');
+            const messageContainer = document.getElementById('booking-confirmation-message');
+
+            if (!shopId || !selectedService || !selectedBarber || !selectedTime) {
+                alert('Please ensure you have selected a service, barber, and time slot.');
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = 'Booking...';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/customers/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': customerToken
+                    },
+                    body: JSON.stringify({
+                        barber_id: selectedBarber.id,
+                        service_id: selectedService.id,
+                        appointment_time: selectedTime,
+                    }),
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to create appointment.');
+
+                messageContainer.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 m-4" role="alert">
+                        <p class="font-bold">Booking Confirmed!</p>
+                        <p>Your appointment has been successfully booked. You can view it in <a href="my-account.html" class="font-bold underline">My Account</a>.</p>
+                    </div>
+                `;
+                messageContainer.classList.remove('hidden');
+                document.getElementById('booking-flow').style.display = 'none';
+
+            } catch (error) {
+                console.error('Booking failed:', error);
+                alert(`Booking failed: ${error.message}`);
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = 'Confirm Booking';
+            }
+        }
+    </script>
+</body>
+</html>
