@@ -73,7 +73,7 @@
                 });
                 if (!response.ok) throw new Error('Could not fetch favourites.');
                 const favs = await response.json();
-                customerFavourites = favs.map(fav => fav.id); // Store an array of favourite shop IDs
+                customerFavourites = favs.map(fav => fav.id);
             } catch (error) {
                 console.error("Failed to fetch customer favourites:", error);
             }
@@ -235,28 +235,45 @@
 
         async function fetchAvailability() {
             if (!selectedBarber) return;
-            const date = document.getElementById('date-picker').value;
-            if (!date) return;
+            const dateString = document.getElementById('date-picker').value;
+            if (!dateString) return;
 
             const slotsContainer = document.getElementById('time-slots');
             slotsContainer.innerHTML = '<p class="col-span-full">Loading times...</p>';
             
             try {
-                const response = await fetch(`http://localhost:3001/api/barbers/${selectedBarber.id}/availability?date=${date}`);
+                const response = await fetch(`http://localhost:3001/api/barbers/${selectedBarber.id}/availability?date=${dateString}`);
                 const slots = await response.json();
-                if (slots.length === 0) {
+
+                const now = new Date();
+                const selectedDate = new Date(dateString + 'T00:00:00');
+                const isToday = selectedDate.toDateString() === now.toDateString();
+
+                console.log('--- Debugging Availability ---');
+                console.log('Current Time (Local):', now.toLocaleTimeString());
+                console.log('Selected Date:', selectedDate.toDateString());
+                console.log('Is Today?', isToday);
+
+                const futureSlots = slots.filter(slot => {
+                    const slotDate = new Date(slot);
+                    if (!isToday) {
+                        return true;
+                    }
+                    const isFuture = slotDate.getTime() > now.getTime();
+                    console.log(`Comparing slot ${slotDate.toLocaleTimeString()} > ${now.toLocaleTimeString()}: ${isFuture}`);
+                    return isFuture;
+                });
+
+                if (futureSlots.length === 0) {
                     slotsContainer.innerHTML = '<p class="col-span-full">No available times for this day.</p>';
                     return;
                 }
-                slotsContainer.innerHTML = slots.map(slot => {
-                    // --- CORRECTED TIMEZONE LOGIC ---
+                
+                slotsContainer.innerHTML = futureSlots.map(slot => {
                     const dateObj = new Date(slot);
-                    const hours = dateObj.getUTCHours();
-                    const minutes = dateObj.getUTCMinutes();
-                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                    const formattedHours = hours % 12 || 12;
-                    const formattedMinutes = String(minutes).padStart(2, '0');
-                    const time = `${formattedHours}:${formattedMinutes} ${ampm}`;
+                    // --- CORRECTED TIME DISPLAY ---
+                    // This now displays the time in the browser's local timezone, matching the filter logic.
+                    const time = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                     
                     return `<button class="selectable-item border rounded-lg p-2 hover:bg-gray-100" onclick="selectTime(this, '${slot}')">${time}</button>`;
                 }).join('');
